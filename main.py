@@ -69,6 +69,82 @@ def extract_sequence_from_pdb(pdb_path):
         sequence += str(pp.get_sequence())
     return sequence
 
+def position_ligand_near_protein(protein_data, ligand_block):
+    """
+    Position the ligand near the protein's center or binding pocket
+    """
+    import re
+    
+    # Extract protein coordinates to find center
+    protein_coords = []
+    for line in protein_data.splitlines():
+        if line.startswith("ATOM"):
+            try:
+                x = float(line[30:38].strip())
+                y = float(line[38:46].strip())
+                z = float(line[46:54].strip())
+                protein_coords.append([x, y, z])
+            except (ValueError, IndexError):
+                continue
+    
+    if not protein_coords:
+        return ligand_block
+    
+    # Calculate protein center
+    protein_coords = np.array(protein_coords)
+    protein_center = np.mean(protein_coords, axis=0)
+    
+    # Parse ligand coordinates
+    ligand_lines = ligand_block.splitlines()
+    translated_lines = []
+    
+    # Extract ligand coordinates to find its current center
+    ligand_coords = []
+    for line in ligand_lines:
+        if line.startswith("ATOM") or line.startswith("HETATM"):
+            try:
+                x = float(line[30:38].strip())
+                y = float(line[38:46].strip())
+                z = float(line[46:54].strip())
+                ligand_coords.append([x, y, z])
+            except (ValueError, IndexError):
+                continue
+    
+    if not ligand_coords:
+        return ligand_block
+    
+    # Calculate ligand center and translation needed
+    ligand_coords = np.array(ligand_coords)
+    ligand_center = np.mean(ligand_coords, axis=0)
+    
+    # Position ligand near protein center (with small offset to avoid overlap)
+    offset = np.array([3.0, 0.0, 0.0])  # 3 Angstrom offset
+    translation = protein_center + offset - ligand_center
+    
+    # Apply translation to ligand coordinates
+    for line in ligand_lines:
+        if line.startswith("ATOM") or line.startswith("HETATM"):
+            try:
+                x = float(line[30:38].strip()) + translation[0]
+                y = float(line[38:46].strip()) + translation[1]
+                z = float(line[46:54].strip()) + translation[2]
+                
+                # Reconstruct the line with new coordinates
+                new_line = (
+                    line[:30] + 
+                    f"{x:8.3f}" + 
+                    f"{y:8.3f}" + 
+                    f"{z:8.3f}" + 
+                    line[54:]
+                )
+                translated_lines.append(new_line)
+            except (ValueError, IndexError):
+                translated_lines.append(line)
+        else:
+            translated_lines.append(line)
+    
+    return "\n".join(translated_lines)
+
 st.set_page_config(page_title="Protein Interaction Prediction", layout="centered")
 
 # Create tabs for different analysis modes
