@@ -319,6 +319,8 @@ with tab1:
                     AllChem.EmbedMolecule(mol)
                     AllChem.MMFFOptimizeMolecule(mol)
                     ligand_block = Chem.MolToPDBBlock(mol)
+                    # Position ligand near protein
+                    ligand_block = position_ligand_near_protein(protein_data, ligand_block)
                     st.session_state['ligand_blocks'][f"ligand_{i}"] = ligand_block
 
                     # Calculate docking score
@@ -535,6 +537,8 @@ with tab1:
                         AllChem.EmbedMolecule(mol)
                         AllChem.MMFFOptimizeMolecule(mol)
                         ligand_block = Chem.MolToPDBBlock(mol)
+                        # Position ligand near protein
+                        ligand_block = position_ligand_near_protein(protein_data, ligand_block)
                         docking_score = calculate_docking_score(protein_data, ligand_block)
                         st.markdown(f"### 🧪 Ligand #{i}")
                         score_col1, score_col2 = st.columns(2)
@@ -615,6 +619,8 @@ with tab1:
                         AllChem.EmbedMolecule(mol)
                         AllChem.MMFFOptimizeMolecule(mol)
                         ligand_block = Chem.MolToPDBBlock(mol)
+                        # Position ligand near protein
+                        ligand_block = position_ligand_near_protein(protein_data, ligand_block)
                         st.session_state['ligand_blocks'][f"ligand_{i}"] = ligand_block
 
                         # Calculate docking score
