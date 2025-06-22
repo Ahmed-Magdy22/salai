@@ -4,13 +4,9 @@ import requests
 import time
 import urllib.parse
 from rdkit import Chem
-# Import PandasTools conditionally to avoid libXrender.so.1 error
-try:
-    from rdkit.Chem import PandasTools
-    HAS_RDKIT_DRAW = True
-except ImportError:
-    HAS_RDKIT_DRAW = False
-    st.warning("RDKit drawing functionality is not available. Some visualization features may be limited.")
+# Note: PandasTools import removed to avoid graphics dependency issues
+# The main RDKit functionality (Chem module) is still available for SMILES processing
+HAS_RDKIT_DRAW = False  # We don't need drawing functionality for this application
 import io
 
 def search_pubchem(query, max_compounds=100):
