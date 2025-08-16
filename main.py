@@ -74,7 +74,7 @@ def position_ligand_near_protein(protein_data, ligand_block):
     Position the ligand near the protein's center or binding pocket
     """
     import re
-    
+
     # Extract protein coordinates to find center
     protein_coords = []
     for line in protein_data.splitlines():
@@ -86,18 +86,18 @@ def position_ligand_near_protein(protein_data, ligand_block):
                 protein_coords.append([x, y, z])
             except (ValueError, IndexError):
                 continue
-    
+
     if not protein_coords:
         return ligand_block
-    
+
     # Calculate protein center
     protein_coords = np.array(protein_coords)
     protein_center = np.mean(protein_coords, axis=0)
-    
+
     # Parse ligand coordinates
     ligand_lines = ligand_block.splitlines()
     translated_lines = []
-    
+
     # Extract ligand coordinates to find its current center
     ligand_coords = []
     for line in ligand_lines:
@@ -109,18 +109,18 @@ def position_ligand_near_protein(protein_data, ligand_block):
                 ligand_coords.append([x, y, z])
             except (ValueError, IndexError):
                 continue
-    
+
     if not ligand_coords:
         return ligand_block
-    
+
     # Calculate ligand center and translation needed
     ligand_coords = np.array(ligand_coords)
     ligand_center = np.mean(ligand_coords, axis=0)
-    
+
     # Position ligand near protein center (with small offset to avoid overlap)
     offset = np.array([3.0, 0.0, 0.0])  # 3 Angstrom offset
     translation = protein_center + offset - ligand_center
-    
+
     # Apply translation to ligand coordinates
     for line in ligand_lines:
         if line.startswith("ATOM") or line.startswith("HETATM"):
@@ -128,13 +128,13 @@ def position_ligand_near_protein(protein_data, ligand_block):
                 x = float(line[30:38].strip()) + translation[0]
                 y = float(line[38:46].strip()) + translation[1]
                 z = float(line[46:54].strip()) + translation[2]
-                
+
                 # Reconstruct the line with new coordinates
                 new_line = (
-                    line[:30] + 
-                    f"{x:8.3f}" + 
-                    f"{y:8.3f}" + 
-                    f"{z:8.3f}" + 
+                    line[:30] +
+                    f"{x:8.3f}" +
+                    f"{y:8.3f}" +
+                    f"{z:8.3f}" +
                     line[54:]
                 )
                 translated_lines.append(new_line)
@@ -142,7 +142,7 @@ def position_ligand_near_protein(protein_data, ligand_block):
                 translated_lines.append(line)
         else:
             translated_lines.append(line)
-    
+
     return "\n".join(translated_lines)
 
 st.set_page_config(page_title="Protein Interaction Prediction", layout="centered")
@@ -151,13 +151,13 @@ st.set_page_config(page_title="Protein Interaction Prediction", layout="centered
 tab1, tab2 = st.tabs(["🧪 Protein-Ligand Interaction", "🔄 Protein-Protein Interaction"])
 
 with tab1:
-    st.title("🤜 Predict Protein-Ligand Interaction (GraphDTA)")
+    st.title(" Predict Protein-Ligand Interaction ")
 
     # Add data source selection
     st.sidebar.title("Data Source Settings")
     data_source = st.sidebar.selectbox(
         "Choose ligand data source:",
-        ["DrugBank (Approved Drugs)", "PubChem", "ChEMBL", "Local CSV (data/kiba_test.csv)"],
+        ["DrugBank (Approved Drugs)", "PubChem", "ChEMBL", "Local Dataset"],
         index=0
     )
 
@@ -259,16 +259,65 @@ with tab1:
             bg_color_map = {
                 "White": "white",
                 "Black": "black",
-                "Gray": "gray",
+                "Colored": "colored",
                 "Light Blue": "lightblue"
             }
 
             # Create 3D viewer
             viewer = py3Dmol.view(width=600, height=400)
             viewer.addModel(protein_data, 'pdb')
-
-            # Apply selected style
-            viewer.setStyle({}, {style_map[viz_style]: {'colorscheme': 'chain'}})
+            
+            # Define explicit color schemes for better visualization
+            if color_scheme == "Secondary Structure":
+                # Color by secondary structure with explicit colors
+                viewer.setStyle({'helix': {}}, {'cartoon': {'color': 'red'}})
+                viewer.setStyle({'sheet': {}}, {'cartoon': {'color': 'blue'}})
+                viewer.setStyle({'loop': {}}, {'cartoon': {'color': 'green'}})
+            elif color_scheme == "Chain":
+                # Color by chain with rainbow colors
+                viewer.setStyle({'chain': 'A'}, {style_map[viz_style]: {'color': 'red'}})
+                viewer.setStyle({'chain': 'B'}, {style_map[viz_style]: {'color': 'blue'}})
+                viewer.setStyle({'chain': 'C'}, {style_map[viz_style]: {'color': 'green'}})
+                viewer.setStyle({'chain': 'D'}, {style_map[viz_style]: {'color': 'yellow'}})
+                viewer.setStyle({'chain': 'E'}, {style_map[viz_style]: {'color': 'purple'}})
+                # Default for any other chains
+                viewer.setStyle({}, {style_map[viz_style]: {'color': 'orange'}})
+            elif color_scheme == "Spectrum":
+                # Use spectrum colorscheme with explicit mapping
+                viewer.setStyle({}, {style_map[viz_style]: {'colorscheme': 'spectrum'}})
+            elif color_scheme == "Residue Type":
+                # Color by residue type
+                viewer.setStyle({'resn': 'ALA'}, {style_map[viz_style]: {'color': 'red'}})
+                viewer.setStyle({'resn': 'ARG'}, {style_map[viz_style]: {'color': 'blue'}})
+                viewer.setStyle({'resn': 'ASN'}, {style_map[viz_style]: {'color': 'green'}})
+                viewer.setStyle({'resn': 'ASP'}, {style_map[viz_style]: {'color': 'yellow'}})
+                viewer.setStyle({'resn': 'CYS'}, {style_map[viz_style]: {'color': 'orange'}})
+                viewer.setStyle({'resn': 'GLN'}, {style_map[viz_style]: {'color': 'purple'}})
+                viewer.setStyle({'resn': 'GLU'}, {style_map[viz_style]: {'color': 'pink'}})
+                viewer.setStyle({'resn': 'GLY'}, {style_map[viz_style]: {'color': 'cyan'}})
+                viewer.setStyle({'resn': 'HIS'}, {style_map[viz_style]: {'color': 'brown'}})
+                viewer.setStyle({'resn': 'ILE'}, {style_map[viz_style]: {'color': 'magenta'}})
+                viewer.setStyle({'resn': 'LEU'}, {style_map[viz_style]: {'color': 'lime'}})
+                viewer.setStyle({'resn': 'LYS'}, {style_map[viz_style]: {'color': 'navy'}})
+                viewer.setStyle({'resn': 'MET'}, {style_map[viz_style]: {'color': 'olive'}})
+                viewer.setStyle({'resn': 'PHE'}, {style_map[viz_style]: {'color': 'teal'}})
+                viewer.setStyle({'resn': 'PRO'}, {style_map[viz_style]: {'color': 'maroon'}})
+                viewer.setStyle({'resn': 'SER'}, {style_map[viz_style]: {'color': 'coral'}})
+                viewer.setStyle({'resn': 'THR'}, {style_map[viz_style]: {'color': 'indigo'}})
+                viewer.setStyle({'resn': 'TRP'}, {style_map[viz_style]: {'color': 'gold'}})
+                viewer.setStyle({'resn': 'TYR'}, {style_map[viz_style]: {'color': 'silver'}})
+                viewer.setStyle({'resn': 'VAL'}, {style_map[viz_style]: {'color': 'violet'}})
+                # Default for any other residues
+                viewer.setStyle({}, {style_map[viz_style]: {'color': 'gray'}})
+            elif color_scheme == "B-factor":
+                # Use B-factor colorscheme
+                viewer.setStyle({}, {style_map[viz_style]: {'colorscheme': 'b'}})
+            else:
+                # Default to chain coloring
+                viewer.setStyle({'chain': 'A'}, {style_map[viz_style]: {'color': 'red'}})
+                viewer.setStyle({'chain': 'B'}, {style_map[viz_style]: {'color': 'blue'}})
+                viewer.setStyle({'chain': 'C'}, {style_map[viz_style]: {'color': 'green'}})
+                viewer.setStyle({}, {style_map[viz_style]: {'color': 'orange'}})
 
             # Apply other visualization settings
             viewer.setBackgroundColor(bg_color_map[background_color])
@@ -339,9 +388,60 @@ with tab1:
 
                 viewer = py3Dmol.view(width=600, height=500)
                 # Add protein model and color by user-selected scheme (model index 0)
-                protein_style = {style_map.get(viz_style, 'cartoon'): {'colorscheme': color_map.get(color_scheme, 'chain'), 'opacity': 1}}
                 viewer.addModel(protein_data, 'pdb')
-                viewer.setStyle({'model': 0}, protein_style)
+                
+                # Apply the same explicit color scheme logic as in the main visualization
+                if color_scheme == "Secondary Structure":
+                    # Color by secondary structure with explicit colors
+                    viewer.setStyle({'model': 0, 'helix': {}}, {'cartoon': {'color': 'red'}})
+                    viewer.setStyle({'model': 0, 'sheet': {}}, {'cartoon': {'color': 'blue'}})
+                    viewer.setStyle({'model': 0, 'loop': {}}, {'cartoon': {'color': 'green'}})
+                elif color_scheme == "Chain":
+                    # Color by chain with rainbow colors
+                    viewer.setStyle({'model': 0, 'chain': 'A'}, {style_map.get(viz_style, 'cartoon'): {'color': 'red'}})
+                    viewer.setStyle({'model': 0, 'chain': 'B'}, {style_map.get(viz_style, 'cartoon'): {'color': 'blue'}})
+                    viewer.setStyle({'model': 0, 'chain': 'C'}, {style_map.get(viz_style, 'cartoon'): {'color': 'green'}})
+                    viewer.setStyle({'model': 0, 'chain': 'D'}, {style_map.get(viz_style, 'cartoon'): {'color': 'yellow'}})
+                    viewer.setStyle({'model': 0, 'chain': 'E'}, {style_map.get(viz_style, 'cartoon'): {'color': 'purple'}})
+                    # Default for any other chains
+                    viewer.setStyle({'model': 0}, {style_map.get(viz_style, 'cartoon'): {'color': 'orange'}})
+                elif color_scheme == "Spectrum":
+                    # Use spectrum colorscheme with explicit mapping
+                    viewer.setStyle({'model': 0}, {style_map.get(viz_style, 'cartoon'): {'colorscheme': 'spectrum'}})
+                elif color_scheme == "Residue Type":
+                    # Color by residue type
+                    viewer.setStyle({'model': 0, 'resn': 'ALA'}, {style_map.get(viz_style, 'cartoon'): {'color': 'red'}})
+                    viewer.setStyle({'model': 0, 'resn': 'ARG'}, {style_map.get(viz_style, 'cartoon'): {'color': 'blue'}})
+                    viewer.setStyle({'model': 0, 'resn': 'ASN'}, {style_map.get(viz_style, 'cartoon'): {'color': 'green'}})
+                    viewer.setStyle({'model': 0, 'resn': 'ASP'}, {style_map.get(viz_style, 'cartoon'): {'color': 'yellow'}})
+                    viewer.setStyle({'model': 0, 'resn': 'CYS'}, {style_map.get(viz_style, 'cartoon'): {'color': 'orange'}})
+                    viewer.setStyle({'model': 0, 'resn': 'GLN'}, {style_map.get(viz_style, 'cartoon'): {'color': 'purple'}})
+                    viewer.setStyle({'model': 0, 'resn': 'GLU'}, {style_map.get(viz_style, 'cartoon'): {'color': 'pink'}})
+                    viewer.setStyle({'model': 0, 'resn': 'GLY'}, {style_map.get(viz_style, 'cartoon'): {'color': 'cyan'}})
+                    viewer.setStyle({'model': 0, 'resn': 'HIS'}, {style_map.get(viz_style, 'cartoon'): {'color': 'brown'}})
+                    viewer.setStyle({'model': 0, 'resn': 'ILE'}, {style_map.get(viz_style, 'cartoon'): {'color': 'magenta'}})
+                    viewer.setStyle({'model': 0, 'resn': 'LEU'}, {style_map.get(viz_style, 'cartoon'): {'color': 'lime'}})
+                    viewer.setStyle({'model': 0, 'resn': 'LYS'}, {style_map.get(viz_style, 'cartoon'): {'color': 'navy'}})
+                    viewer.setStyle({'model': 0, 'resn': 'MET'}, {style_map.get(viz_style, 'cartoon'): {'color': 'olive'}})
+                    viewer.setStyle({'model': 0, 'resn': 'PHE'}, {style_map.get(viz_style, 'cartoon'): {'color': 'teal'}})
+                    viewer.setStyle({'model': 0, 'resn': 'PRO'}, {style_map.get(viz_style, 'cartoon'): {'color': 'maroon'}})
+                    viewer.setStyle({'model': 0, 'resn': 'SER'}, {style_map.get(viz_style, 'cartoon'): {'color': 'coral'}})
+                    viewer.setStyle({'model': 0, 'resn': 'THR'}, {style_map.get(viz_style, 'cartoon'): {'color': 'indigo'}})
+                    viewer.setStyle({'model': 0, 'resn': 'TRP'}, {style_map.get(viz_style, 'cartoon'): {'color': 'gold'}})
+                    viewer.setStyle({'model': 0, 'resn': 'TYR'}, {style_map.get(viz_style, 'cartoon'): {'color': 'silver'}})
+                    viewer.setStyle({'model': 0, 'resn': 'VAL'}, {style_map.get(viz_style, 'cartoon'): {'color': 'violet'}})
+                    # Default for any other residues
+                    viewer.setStyle({'model': 0}, {style_map.get(viz_style, 'cartoon'): {'color': 'gray'}})
+                elif color_scheme == "B-factor":
+                    # Use B-factor colorscheme
+                    viewer.setStyle({'model': 0}, {style_map.get(viz_style, 'cartoon'): {'colorscheme': 'b'}})
+                else:
+                    # Default to chain coloring
+                    viewer.setStyle({'model': 0, 'chain': 'A'}, {style_map.get(viz_style, 'cartoon'): {'color': 'red'}})
+                    viewer.setStyle({'model': 0, 'chain': 'B'}, {style_map.get(viz_style, 'cartoon'): {'color': 'blue'}})
+                    viewer.setStyle({'model': 0, 'chain': 'C'}, {style_map.get(viz_style, 'cartoon'): {'color': 'green'}})
+                    viewer.setStyle({'model': 0}, {style_map.get(viz_style, 'cartoon'): {'color': 'orange'}})
+
                 # Add ligand model and color green (model index 1, fully opaque, stick style for visibility)
                 viewer.addModel(ligand_block, 'pdb')
                 viewer.setStyle({'model': 1}, {'stick': {'color': 'green', 'opacity': 1}})
@@ -548,9 +648,60 @@ with tab1:
                             st.success(f"**Docking Score:** {docking_score:.2f} kcal/mol")
                         viewer = py3Dmol.view(width=600, height=500)
                         # Add protein model and color by user-selected scheme (model index 0)
-                        protein_style = {style_map.get(viz_style, 'cartoon'): {'colorscheme': color_map.get(color_scheme, 'chain'), 'opacity': 1}}
                         viewer.addModel(protein_data, 'pdb')
-                        viewer.setStyle({'model': 0}, protein_style)
+                        
+                        # Apply the same explicit color scheme logic as in the main visualization
+                        if color_scheme == "Secondary Structure":
+                            # Color by secondary structure with explicit colors
+                            viewer.setStyle({'model': 0, 'helix': {}}, {'cartoon': {'color': 'red'}})
+                            viewer.setStyle({'model': 0, 'sheet': {}}, {'cartoon': {'color': 'blue'}})
+                            viewer.setStyle({'model': 0, 'loop': {}}, {'cartoon': {'color': 'green'}})
+                        elif color_scheme == "Chain":
+                            # Color by chain with rainbow colors
+                            viewer.setStyle({'model': 0, 'chain': 'A'}, {style_map.get(viz_style, 'cartoon'): {'color': 'red'}})
+                            viewer.setStyle({'model': 0, 'chain': 'B'}, {style_map.get(viz_style, 'cartoon'): {'color': 'blue'}})
+                            viewer.setStyle({'model': 0, 'chain': 'C'}, {style_map.get(viz_style, 'cartoon'): {'color': 'green'}})
+                            viewer.setStyle({'model': 0, 'chain': 'D'}, {style_map.get(viz_style, 'cartoon'): {'color': 'yellow'}})
+                            viewer.setStyle({'model': 0, 'chain': 'E'}, {style_map.get(viz_style, 'cartoon'): {'color': 'purple'}})
+                            # Default for any other chains
+                            viewer.setStyle({'model': 0}, {style_map.get(viz_style, 'cartoon'): {'color': 'orange'}})
+                        elif color_scheme == "Spectrum":
+                            # Use spectrum colorscheme with explicit mapping
+                            viewer.setStyle({'model': 0}, {style_map.get(viz_style, 'cartoon'): {'colorscheme': 'spectrum'}})
+                        elif color_scheme == "Residue Type":
+                            # Color by residue type
+                            viewer.setStyle({'model': 0, 'resn': 'ALA'}, {style_map.get(viz_style, 'cartoon'): {'color': 'red'}})
+                            viewer.setStyle({'model': 0, 'resn': 'ARG'}, {style_map.get(viz_style, 'cartoon'): {'color': 'blue'}})
+                            viewer.setStyle({'model': 0, 'resn': 'ASN'}, {style_map.get(viz_style, 'cartoon'): {'color': 'green'}})
+                            viewer.setStyle({'model': 0, 'resn': 'ASP'}, {style_map.get(viz_style, 'cartoon'): {'color': 'yellow'}})
+                            viewer.setStyle({'model': 0, 'resn': 'CYS'}, {style_map.get(viz_style, 'cartoon'): {'color': 'orange'}})
+                            viewer.setStyle({'model': 0, 'resn': 'GLN'}, {style_map.get(viz_style, 'cartoon'): {'color': 'purple'}})
+                            viewer.setStyle({'model': 0, 'resn': 'GLU'}, {style_map.get(viz_style, 'cartoon'): {'color': 'pink'}})
+                            viewer.setStyle({'model': 0, 'resn': 'GLY'}, {style_map.get(viz_style, 'cartoon'): {'color': 'cyan'}})
+                            viewer.setStyle({'model': 0, 'resn': 'HIS'}, {style_map.get(viz_style, 'cartoon'): {'color': 'brown'}})
+                            viewer.setStyle({'model': 0, 'resn': 'ILE'}, {style_map.get(viz_style, 'cartoon'): {'color': 'magenta'}})
+                            viewer.setStyle({'model': 0, 'resn': 'LEU'}, {style_map.get(viz_style, 'cartoon'): {'color': 'lime'}})
+                            viewer.setStyle({'model': 0, 'resn': 'LYS'}, {style_map.get(viz_style, 'cartoon'): {'color': 'navy'}})
+                            viewer.setStyle({'model': 0, 'resn': 'MET'}, {style_map.get(viz_style, 'cartoon'): {'color': 'olive'}})
+                            viewer.setStyle({'model': 0, 'resn': 'PHE'}, {style_map.get(viz_style, 'cartoon'): {'color': 'teal'}})
+                            viewer.setStyle({'model': 0, 'resn': 'PRO'}, {style_map.get(viz_style, 'cartoon'): {'color': 'maroon'}})
+                            viewer.setStyle({'model': 0, 'resn': 'SER'}, {style_map.get(viz_style, 'cartoon'): {'color': 'coral'}})
+                            viewer.setStyle({'model': 0, 'resn': 'THR'}, {style_map.get(viz_style, 'cartoon'): {'color': 'indigo'}})
+                            viewer.setStyle({'model': 0, 'resn': 'TRP'}, {style_map.get(viz_style, 'cartoon'): {'color': 'gold'}})
+                            viewer.setStyle({'model': 0, 'resn': 'TYR'}, {style_map.get(viz_style, 'cartoon'): {'color': 'silver'}})
+                            viewer.setStyle({'model': 0, 'resn': 'VAL'}, {style_map.get(viz_style, 'cartoon'): {'color': 'violet'}})
+                            # Default for any other residues
+                            viewer.setStyle({'model': 0}, {style_map.get(viz_style, 'cartoon'): {'color': 'gray'}})
+                        elif color_scheme == "B-factor":
+                            # Use B-factor colorscheme
+                            viewer.setStyle({'model': 0}, {style_map.get(viz_style, 'cartoon'): {'colorscheme': 'b'}})
+                        else:
+                            # Default to chain coloring
+                            viewer.setStyle({'model': 0, 'chain': 'A'}, {style_map.get(viz_style, 'cartoon'): {'color': 'red'}})
+                            viewer.setStyle({'model': 0, 'chain': 'B'}, {style_map.get(viz_style, 'cartoon'): {'color': 'blue'}})
+                            viewer.setStyle({'model': 0, 'chain': 'C'}, {style_map.get(viz_style, 'cartoon'): {'color': 'green'}})
+                            viewer.setStyle({'model': 0}, {style_map.get(viz_style, 'cartoon'): {'color': 'orange'}})
+
                         # Add ligand model and color green (model index 1, fully opaque, stick style for visibility)
                         viewer.addModel(ligand_block, 'pdb')
                         viewer.setStyle({'model': 1}, {'stick': {'color': 'green', 'opacity': 1}})
@@ -643,9 +794,60 @@ with tab1:
 
                     viewer = py3Dmol.view(width=600, height=500)
                     # Add protein model and color by user-selected scheme (model index 0)
-                    protein_style = {style_map.get(viz_style, 'cartoon'): {'colorscheme': color_map.get(color_scheme, 'chain'), 'opacity': 1}}
                     viewer.addModel(protein_data, 'pdb')
-                    viewer.setStyle({'model': 0}, protein_style)
+                    
+                    # Apply the same explicit color scheme logic as in the main visualization
+                    if color_scheme == "Secondary Structure":
+                        # Color by secondary structure with explicit colors
+                        viewer.setStyle({'model': 0, 'helix': {}}, {'cartoon': {'color': 'red'}})
+                        viewer.setStyle({'model': 0, 'sheet': {}}, {'cartoon': {'color': 'blue'}})
+                        viewer.setStyle({'model': 0, 'loop': {}}, {'cartoon': {'color': 'green'}})
+                    elif color_scheme == "Chain":
+                        # Color by chain with rainbow colors
+                        viewer.setStyle({'model': 0, 'chain': 'A'}, {style_map.get(viz_style, 'cartoon'): {'color': 'red'}})
+                        viewer.setStyle({'model': 0, 'chain': 'B'}, {style_map.get(viz_style, 'cartoon'): {'color': 'blue'}})
+                        viewer.setStyle({'model': 0, 'chain': 'C'}, {style_map.get(viz_style, 'cartoon'): {'color': 'green'}})
+                        viewer.setStyle({'model': 0, 'chain': 'D'}, {style_map.get(viz_style, 'cartoon'): {'color': 'yellow'}})
+                        viewer.setStyle({'model': 0, 'chain': 'E'}, {style_map.get(viz_style, 'cartoon'): {'color': 'purple'}})
+                        # Default for any other chains
+                        viewer.setStyle({'model': 0}, {style_map.get(viz_style, 'cartoon'): {'color': 'orange'}})
+                    elif color_scheme == "Spectrum":
+                        # Use spectrum colorscheme with explicit mapping
+                        viewer.setStyle({'model': 0}, {style_map.get(viz_style, 'cartoon'): {'colorscheme': 'spectrum'}})
+                    elif color_scheme == "Residue Type":
+                        # Color by residue type
+                        viewer.setStyle({'model': 0, 'resn': 'ALA'}, {style_map.get(viz_style, 'cartoon'): {'color': 'red'}})
+                        viewer.setStyle({'model': 0, 'resn': 'ARG'}, {style_map.get(viz_style, 'cartoon'): {'color': 'blue'}})
+                        viewer.setStyle({'model': 0, 'resn': 'ASN'}, {style_map.get(viz_style, 'cartoon'): {'color': 'green'}})
+                        viewer.setStyle({'model': 0, 'resn': 'ASP'}, {style_map.get(viz_style, 'cartoon'): {'color': 'yellow'}})
+                        viewer.setStyle({'model': 0, 'resn': 'CYS'}, {style_map.get(viz_style, 'cartoon'): {'color': 'orange'}})
+                        viewer.setStyle({'model': 0, 'resn': 'GLN'}, {style_map.get(viz_style, 'cartoon'): {'color': 'purple'}})
+                        viewer.setStyle({'model': 0, 'resn': 'GLU'}, {style_map.get(viz_style, 'cartoon'): {'color': 'pink'}})
+                        viewer.setStyle({'model': 0, 'resn': 'GLY'}, {style_map.get(viz_style, 'cartoon'): {'color': 'cyan'}})
+                        viewer.setStyle({'model': 0, 'resn': 'HIS'}, {style_map.get(viz_style, 'cartoon'): {'color': 'brown'}})
+                        viewer.setStyle({'model': 0, 'resn': 'ILE'}, {style_map.get(viz_style, 'cartoon'): {'color': 'magenta'}})
+                        viewer.setStyle({'model': 0, 'resn': 'LEU'}, {style_map.get(viz_style, 'cartoon'): {'color': 'lime'}})
+                        viewer.setStyle({'model': 0, 'resn': 'LYS'}, {style_map.get(viz_style, 'cartoon'): {'color': 'navy'}})
+                        viewer.setStyle({'model': 0, 'resn': 'MET'}, {style_map.get(viz_style, 'cartoon'): {'color': 'olive'}})
+                        viewer.setStyle({'model': 0, 'resn': 'PHE'}, {style_map.get(viz_style, 'cartoon'): {'color': 'teal'}})
+                        viewer.setStyle({'model': 0, 'resn': 'PRO'}, {style_map.get(viz_style, 'cartoon'): {'color': 'maroon'}})
+                        viewer.setStyle({'model': 0, 'resn': 'SER'}, {style_map.get(viz_style, 'cartoon'): {'color': 'coral'}})
+                        viewer.setStyle({'model': 0, 'resn': 'THR'}, {style_map.get(viz_style, 'cartoon'): {'color': 'indigo'}})
+                        viewer.setStyle({'model': 0, 'resn': 'TRP'}, {style_map.get(viz_style, 'cartoon'): {'color': 'gold'}})
+                        viewer.setStyle({'model': 0, 'resn': 'TYR'}, {style_map.get(viz_style, 'cartoon'): {'color': 'silver'}})
+                        viewer.setStyle({'model': 0, 'resn': 'VAL'}, {style_map.get(viz_style, 'cartoon'): {'color': 'violet'}})
+                        # Default for any other residues
+                        viewer.setStyle({'model': 0}, {style_map.get(viz_style, 'cartoon'): {'color': 'gray'}})
+                    elif color_scheme == "B-factor":
+                        # Use B-factor colorscheme
+                        viewer.setStyle({'model': 0}, {style_map.get(viz_style, 'cartoon'): {'colorscheme': 'b'}})
+                    else:
+                        # Default to chain coloring
+                        viewer.setStyle({'model': 0, 'chain': 'A'}, {style_map.get(viz_style, 'cartoon'): {'color': 'red'}})
+                        viewer.setStyle({'model': 0, 'chain': 'B'}, {style_map.get(viz_style, 'cartoon'): {'color': 'blue'}})
+                        viewer.setStyle({'model': 0, 'chain': 'C'}, {style_map.get(viz_style, 'cartoon'): {'color': 'green'}})
+                        viewer.setStyle({'model': 0}, {style_map.get(viz_style, 'cartoon'): {'color': 'orange'}})
+
                     # Add ligand model and color green (model index 1, fully opaque, stick style for visibility)
                     viewer.addModel(ligand_block, 'pdb')
                     viewer.setStyle({'model': 1}, {'stick': {'color': 'green', 'opacity': 1}})
@@ -874,7 +1076,6 @@ with tab2:
                             )
                     else:
                         st.error(f"Could not download PDB file for {pred['protein']} (PDB ID: {pred['pdb_id']})")
-
     # Clean up the temporary file
     try:
         os.unlink(target_pdb_path)
