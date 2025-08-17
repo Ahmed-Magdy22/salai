@@ -1076,7 +1076,6 @@ with tab2:
                             )
                     else:
                         st.error(f"Could not download PDB file for {pred['protein']} (PDB ID: {pred['pdb_id']})")
-
     # Clean up the temporary file
     try:
         os.unlink(target_pdb_path)
